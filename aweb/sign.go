@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -16,6 +15,7 @@ var (
 	ErrNoSignature      = errors.New("no signature")
 	ErrNoSigExpiredTime = errors.New("no sig expired time")
 	ErrSigExpired       = errors.New("signature expired")
+	ErrInvalidSignature = errors.New("invalid signature")
 )
 
 const (
@@ -72,7 +72,7 @@ func (s *signer) VerifyRequest(r *http.Request, headerKeysNeedToSign ...string) 
 
 	// 2. 比较签名
 	if sig != expectedSig {
-		return fmt.Errorf("signature mismatch: %s != %s", sig, expectedSig)
+		return ErrInvalidSignature
 	}
 
 	// 3. 验证时间戳

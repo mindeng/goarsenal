@@ -43,6 +43,52 @@ func TestSignRequest(t *testing.T) {
 	}
 }
 
+// TestVerifyRequest tests the VerifyRequest function.
+func TestVerifyRequest(t *testing.T) {
+	t.Parallel()
+	// create a signer with a signing key
+	signer := NewSigner("test")
+
+	// create a request with a valid signature
+	req := newReqBuilder("GET", "http://example.com").build()
+	err := signer.SignRequest(req, time.Now().Add(1*time.Second))
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	// verify the request
+	err = signer.VerifyRequest(req)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	// create a request with an invalid signature
+	req = newReqBuilder("GET", "http://example.com").build()
+	req.Header.Set(headerKeySignature, "invalid")
+	req.Header.Set(headerKeySigExpiredTime, time.Now().Add(1*time.Second).Format(time.RFC3339))
+	// verify the request
+	err = signer.VerifyRequest(req)
+	if err != ErrInvalidSignature {
+		t.Errorf("Expected error %v, got %v", ErrInvalidSignature, err)
+	}
+
+	// create a request withouth a signature
+	req = newReqBuilder("GET", "http://example.com").build()
+	// verify the request
+	err = signer.VerifyRequest(req)
+	if err != ErrNoSignature {
+		t.Errorf("Expected error %v, got %v", ErrNoSignature, err)
+	}
+
+	// create a request withouth a signature expired time
+	req = newReqBuilder("GET", "http://example.com").build()
+	req.Header.Set(headerKeySignature, "invalid")
+	// verify the request
+	err = signer.VerifyRequest(req)
+	if err != ErrNoSigExpiredTime {
+		t.Errorf("Expected error %v, got %v", ErrNoSigExpiredTime, err)
+	}
+}
+
 func TestCalcSignature(t *testing.T) {
 	t.Parallel()
 
