@@ -14,20 +14,20 @@ func TestSignRequest(t *testing.T) {
 
 	signingKey := "test"
 	req := newReqBuilder("GET", "http://example.com").build()
-	signer := NewSigner(signingKey, 1*time.Second)
-	err := signer.SignRequest(req)
+	signer := NewSigner(signingKey)
+	err := signer.SignRequest(req, time.Now().Add(1*time.Second))
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
 
-	signTime := req.Header.Get("X-Sign-Time")
+	signTime := req.Header.Get(headerKeySigExpiredTime)
 	if signTime == "" {
-		t.Errorf("Expected X-Sign-Time header to be set")
+		t.Errorf("Expected %s header to be set", headerKeySigExpiredTime)
 	}
 
-	signature := req.Header.Get("X-Signature")
+	signature := req.Header.Get(headerKeySignature)
 	if signature == "" {
-		t.Errorf("Expected X-Signature header to be set")
+		t.Errorf("Expected %s header to be set", headerKeySignature)
 	}
 
 	err = signer.VerifyRequest(req)
@@ -38,8 +38,8 @@ func TestSignRequest(t *testing.T) {
 	// sleep for 1.1 seconds to make sure the signature has expired
 	time.Sleep(1100 * time.Millisecond)
 	err = signer.VerifyRequest(req)
-	if err != ErrSignatureExpired {
-		t.Errorf("Expected error %v, got %v", ErrSignatureExpired, err)
+	if err != ErrSigExpired {
+		t.Errorf("Expected error %v, got %v", ErrSigExpired, err)
 	}
 }
 
@@ -59,7 +59,7 @@ func TestCalcSignature(t *testing.T) {
 			name:        "no signing key",
 			signingKey:  "test",
 			req:         newReqBuilder("GET", "http://example.com").build(),
-			expectedErr: ErrNoSignTime,
+			expectedErr: ErrNoSigExpiredTime,
 		},
 
 		{
@@ -67,7 +67,7 @@ func TestCalcSignature(t *testing.T) {
 			signingKey: "test",
 			req: newReqBuilder("GET", "http://example.com").
 				withHeaders(map[string]string{
-					"X-Sign-Time": "2017-01-01T00:00:00Z",
+					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).build(),
 			expectedSignature: "OWPlFpd22vMoUOBNjZALBtGpSWN1t40+yVCDQe502eo=",
 		},
@@ -77,7 +77,7 @@ func TestCalcSignature(t *testing.T) {
 			signingKey: "test2",
 			req: newReqBuilder("GET", "http://example.com").
 				withHeaders(map[string]string{
-					"X-Sign-Time": "2017-01-01T00:00:00Z",
+					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).build(),
 			expectedSignature: "P1Xo+GDOaOushtZiuc8LEIFSaGxsdR3we2hYYgpDLLI=",
 		},
@@ -87,7 +87,7 @@ func TestCalcSignature(t *testing.T) {
 			signingKey: "test",
 			req: newReqBuilder("GET", "http://example.com").
 				withHeaders(map[string]string{
-					"X-Sign-Time": "2017-01-01T00:00:01Z",
+					headerKeySigExpiredTime: "2017-01-01T00:00:01Z",
 				}).build(),
 			expectedSignature: "dw3Wi9ZWx2OYz9tkUr25suKL9QtAp594LZnCnfZ1JsE=",
 		},
@@ -97,7 +97,7 @@ func TestCalcSignature(t *testing.T) {
 			signingKey: "test",
 			req: newReqBuilder("GET", "http://example.com?a=1").
 				withHeaders(map[string]string{
-					"X-Sign-Time": "2017-01-01T00:00:00Z",
+					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).build(),
 			expectedSignature: "v6R49ovVcMB5EH+EbGRGf7H9ceKIWOp/WS12QQbBYp4=",
 		},
@@ -107,7 +107,7 @@ func TestCalcSignature(t *testing.T) {
 			signingKey: "test",
 			req: newReqBuilder("POST", "http://example.com").
 				withHeaders(map[string]string{
-					"X-Sign-Time": "2017-01-01T00:00:00Z",
+					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).build(),
 			expectedSignature: "UY5VxO5habdzHfcKYp+6p+QN3A73flQKk1iqe+VnJFw=",
 		},
@@ -117,7 +117,7 @@ func TestCalcSignature(t *testing.T) {
 			signingKey: "test",
 			req: newReqBuilder("POST", "http://example.com").
 				withHeaders(map[string]string{
-					"X-Sign-Time": "2017-01-01T00:00:00Z",
+					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).withBody("test body").build(),
 			expectedSignature: "gtI59p0Mf0bsFLSfZOYAT7XpnQCN78VoKnMfUCbRX5s=",
 		},
@@ -127,7 +127,7 @@ func TestCalcSignature(t *testing.T) {
 			signingKey: "test",
 			req: newReqBuilder("POST", "http://example.com").
 				withHeaders(map[string]string{
-					"X-Sign-Time": "2017-01-01T00:00:00Z",
+					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).withBody("test body 2").build(),
 			expectedSignature: "TF/ndCBoH7QpAsIB+tV3D/dMGkc92ugMaczOszckTsM=",
 		},
