@@ -18,9 +18,9 @@ const (
 )
 
 var (
-	ErrNoSignature = errors.New("no signature")
-	ErrNoSignTime  = errors.New("no sign timestamp")
-	ErrSigExpired  = errors.New("signature expired")
+	ErrNoSignature      = errors.New("no signature")
+	ErrNoSignTime       = errors.New("no sign timestamp")
+	ErrSignatureExpired = errors.New("signature expired")
 )
 
 // Signer 签名器
@@ -88,7 +88,7 @@ func (s *signer) VerifyRequest(r *http.Request, headerKeysNeedToSign ...string) 
 		return err
 	}
 	if time.Since(tm) > s.sigValidPeriod {
-		return ErrSigExpired
+		return ErrSignatureExpired
 	}
 
 	return nil
