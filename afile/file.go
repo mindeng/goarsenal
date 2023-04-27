@@ -92,3 +92,31 @@ func ExpandTilde(p string) (string, error) {
 
 	return path.Join(homeDir, p[2:]), nil
 }
+
+// ReadLines reads lines from the specified inputFile.
+// if the inputFile is empty or "-", it reads from stdin.
+func ReadLines(inputFile string) ([]string, error) {
+	var reader io.Reader
+	if inputFile == "" || inputFile == "-" {
+		// read from stdin
+		reader = os.Stdin
+	} else {
+		// read from file
+		file, err := os.Open(inputFile)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to open input file: %v", err)
+		}
+		defer file.Close()
+		reader = file
+	}
+
+	var lines []string
+
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		lines = append(lines, line)
+	}
+
+	return lines, nil
+}

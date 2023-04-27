@@ -38,3 +38,33 @@ func TestExpandTilde(t *testing.T) {
 		}
 	}
 }
+
+// TestReadLines tests the ReadLines function.
+func TestReadLines(t *testing.T) {
+	// Test cases.
+	testCases := []struct {
+		in  string
+		out []string
+	}{
+		{"testdata/empty.txt", []string{}},
+		{"testdata/one.txt", []string{"one"}},
+		{"testdata/two.txt", []string{"one", "", "two"}},
+		{"testdata/three.txt", []string{"one", "two", "three"}},
+	}
+
+	// Run test cases.
+	for i, testCase := range testCases {
+		out, err := ReadLines(testCase.in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(out) != len(testCase.out) {
+			t.Errorf("Test case %d: Expected %d lines, got %d", i, len(testCase.out), len(out))
+		}
+		for j, line := range out {
+			if line != testCase.out[j] {
+				t.Errorf("Test case %d: Expected line %d to be %q, got %q", i, j, testCase.out[j], line)
+			}
+		}
+	}
+}
