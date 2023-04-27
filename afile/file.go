@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 )
 
 // ReadFromFileOrStdin reads data from the specified inputFile.
@@ -74,4 +75,20 @@ func WriteToFileOrStdout(outputFile string, data []byte) error {
 	}
 
 	return nil
+}
+
+// ExpandTilde expands the tilde in the path p.
+// If the path does not start with "~/", it returns the path as is.
+// If the path starts with "~/", it expands the tilde to the home directory.
+func ExpandTilde(p string) (string, error) {
+	if len(p) < 2 || p[:2] != "~/" {
+		return p, nil
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("Failed to get home directory: %v", err)
+	}
+
+	return path.Join(homeDir, p[2:]), nil
 }
