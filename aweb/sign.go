@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -28,7 +29,7 @@ const (
 // 签名时，会增加 X-Signature 和 X-Sig-Expired 两个 Header
 // 验证时，会从 X-Signature 中获取签名，并与计算出的签名进行比较，同时会验证 X-Sig-Expired 是否过期
 type Signer interface {
-	SignRequest(r *http.Request, expiredTime time.Time, headerKeysNeedToSign ...string) error
+	SignRequest(r *http.Request, expiredTime time.Time, stripPathPrefix string, headerKeysNeedToSign ...string) error
 	VerifyRequest(r *http.Request, headerKeysNeedToSign ...string) error
 }
 
@@ -43,12 +44,12 @@ func NewSigner(signingKey string) Signer {
 }
 
 // SignRequest 签名 http.Request
-func (s *signer) SignRequest(r *http.Request, expiredTime time.Time, headerKeysNeedToSign ...string) error {
+func (s *signer) SignRequest(r *http.Request, expiredTime time.Time, stripPathPrefix string, headerKeysNeedToSign ...string) error {
 	// 为 Header 增加过期时间戳，采用 ISO8601 格式
 	r.Header.Add(headerKeySigExpiredTime, expiredTime.UTC().Format(time.RFC3339))
 
 	// 计算签名
-	sig, err := calcSignature(s.hmacKey, r, headerKeysNeedToSign...)
+	sig, err := calcSignature(s.hmacKey, r, stripPathPrefix, headerKeysNeedToSign...)
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func (s *signer) VerifyRequest(r *http.Request, headerKeysNeedToSign ...string) 
 		return ErrNoSignature
 	}
 
-	expectedSig, err := calcSignature(s.hmacKey, r, headerKeysNeedToSign...)
+	expectedSig, err := calcSignature(s.hmacKey, r, "", headerKeysNeedToSign...)
 	if err != nil {
 		return err
 	}
@@ -92,7 +93,7 @@ func (s *signer) VerifyRequest(r *http.Request, headerKeysNeedToSign ...string) 
 }
 
 // calcSignature 计算 HMAC 签名并返回
-func calcSignature(key string, r *http.Request, headerKeysToSign ...string) (string, error) {
+func calcSignature(key string, r *http.Request, stripPathPrefix string, headerKeysToSign ...string) (string, error) {
 	// 1. 计算签名
 	mac := hmac.New(sha256.New, []byte(key))
 
@@ -101,7 +102,11 @@ func calcSignature(key string, r *http.Request, headerKeysToSign ...string) (str
 	// 注意：这里不能用 r.URL.String()，
 	// 因为 r.URL.String() 会把 Scheme 和 Host 也包含进去, 在 Server
 	// 端验证时会出错（因为 Server 端的 URL 是不包含 Scheme 和 Host 的）
-	mac.Write([]byte(r.URL.Path))
+	path := r.URL.Path
+	if stripPathPrefix != "" {
+		path = strings.TrimPrefix(path, stripPathPrefix)
+	}
+	mac.Write([]byte(path))
 	mac.Write([]byte(r.URL.RawQuery))
 	// 增加 Method 的签名
 	mac.Write([]byte(r.Method))

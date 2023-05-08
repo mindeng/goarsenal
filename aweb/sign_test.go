@@ -15,7 +15,7 @@ func TestSignRequest(t *testing.T) {
 	signingKey := "test"
 	req := newReqBuilder("GET", "http://example.com").build()
 	signer := NewSigner(signingKey)
-	err := signer.SignRequest(req, time.Now().Add(1*time.Second))
+	err := signer.SignRequest(req, time.Now().Add(1*time.Second), "")
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -51,7 +51,7 @@ func TestVerifyRequest(t *testing.T) {
 
 	// create a request with a valid signature
 	req := newReqBuilder("GET", "http://example.com").build()
-	err := signer.SignRequest(req, time.Now().Add(1*time.Second))
+	err := signer.SignRequest(req, time.Now().Add(1*time.Second), "")
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -115,7 +115,7 @@ func TestCalcSignature(t *testing.T) {
 				withHeaders(map[string]string{
 					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).build(),
-			expectedSignature: "OWPlFpd22vMoUOBNjZALBtGpSWN1t40+yVCDQe502eo=",
+			expectedSignature: "SQ43bXZFCGmtxTZQ21JPJv0chHp0M9EnRI4YUrtGLFA=",
 		},
 
 		{
@@ -125,7 +125,7 @@ func TestCalcSignature(t *testing.T) {
 				withHeaders(map[string]string{
 					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).build(),
-			expectedSignature: "P1Xo+GDOaOushtZiuc8LEIFSaGxsdR3we2hYYgpDLLI=",
+			expectedSignature: "YkEORS9zKzXN6uJPbAk/5WI+/ASYijMAbbeHEXtnpIA=",
 		},
 
 		{
@@ -135,7 +135,7 @@ func TestCalcSignature(t *testing.T) {
 				withHeaders(map[string]string{
 					headerKeySigExpiredTime: "2017-01-01T00:00:01Z",
 				}).build(),
-			expectedSignature: "dw3Wi9ZWx2OYz9tkUr25suKL9QtAp594LZnCnfZ1JsE=",
+			expectedSignature: "JboiDEACIbS4L8Eh3D3au5/7p8s0ohTf2v7zBnwhgNQ=",
 		},
 
 		{
@@ -145,7 +145,7 @@ func TestCalcSignature(t *testing.T) {
 				withHeaders(map[string]string{
 					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).build(),
-			expectedSignature: "v6R49ovVcMB5EH+EbGRGf7H9ceKIWOp/WS12QQbBYp4=",
+			expectedSignature: "Zp6peh1pkk6VOPV1su87YR5cEVg9m4VUxhWcC+6qYa8=",
 		},
 
 		{
@@ -155,7 +155,7 @@ func TestCalcSignature(t *testing.T) {
 				withHeaders(map[string]string{
 					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).build(),
-			expectedSignature: "UY5VxO5habdzHfcKYp+6p+QN3A73flQKk1iqe+VnJFw=",
+			expectedSignature: "wiqZ0JsPlbAzedvP8sYpX0oTzIzXHTv2DntkafcJhd4=",
 		},
 
 		{
@@ -165,7 +165,7 @@ func TestCalcSignature(t *testing.T) {
 				withHeaders(map[string]string{
 					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).withBody("test body").build(),
-			expectedSignature: "gtI59p0Mf0bsFLSfZOYAT7XpnQCN78VoKnMfUCbRX5s=",
+			expectedSignature: "ENz9ZQxSUwlCR4euqhIpSWJYWozS+PgDniFk+Z7hU2k=",
 		},
 
 		{
@@ -175,13 +175,13 @@ func TestCalcSignature(t *testing.T) {
 				withHeaders(map[string]string{
 					headerKeySigExpiredTime: "2017-01-01T00:00:00Z",
 				}).withBody("test body 2").build(),
-			expectedSignature: "TF/ndCBoH7QpAsIB+tV3D/dMGkc92ugMaczOszckTsM=",
+			expectedSignature: "PeSp+m8MxaQpAcWtGtj8tGYrdzVqhrt3NnNW3dca7ac=",
 		},
 	}
 
 	for _, test := range tests {
 		t.Logf("Running test: [%s]", test.name)
-		signature, err := calcSignature(test.signingKey, test.req, test.headerKeysToSign...)
+		signature, err := calcSignature(test.signingKey, test.req, "", test.headerKeysToSign...)
 		if err != test.expectedErr {
 			t.Errorf("[%s] Expected error %v, got %v", test.name, test.expectedErr, err)
 		}
