@@ -97,7 +97,8 @@ func calcSignature(key string, r *http.Request, headerKeysToSign ...string) (str
 	mac := hmac.New(sha256.New, []byte(key))
 
 	// 增加 URL 的签名。包括 Path 和 RawQuery 例如：
-	// /api/v1/users?name=abc&age=18 注意：这里不能用 r.URL.String()，
+	// /api/v1/users?name=abc&age=18
+	// 注意：这里不能用 r.URL.String()，
 	// 因为 r.URL.String() 会把 Scheme 和 Host 也包含进去, 在 Server
 	// 端验证时会出错（因为 Server 端的 URL 是不包含 Scheme 和 Host 的）
 	mac.Write([]byte(r.URL.Path))
